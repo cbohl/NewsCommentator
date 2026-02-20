@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 last_successful_run: datetime | None = None
 
 
-def process_new_articles():
+def process_new_articles(limit: int = 1):
     global last_successful_run
     db: Session = SessionLocal()
     try:
-        rss_articles = fetch_rss_articles()
+        rss_articles = fetch_rss_articles(limit=limit)
         logger.info("Fetched %d articles from RSS", len(rss_articles))
 
         for item in rss_articles:

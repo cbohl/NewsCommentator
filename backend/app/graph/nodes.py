@@ -3,7 +3,14 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from .state import CommentaryState
 
-llm = ChatOpenAI(model="gpt-5-nano")
+_llm = None
+
+
+def _get_llm():
+    global _llm
+    if _llm is None:
+        _llm = ChatOpenAI(model="gpt-5-nano")
+    return _llm
 
 SYSTEM_RULES = (
     "You are a concise expert commentator. Rules you MUST follow:\n"
@@ -43,7 +50,7 @@ def _build_user_message(state: CommentaryState) -> str:
 
 
 def historian_node(state: CommentaryState) -> dict:
-    response = llm.invoke([
+    response = _get_llm().invoke([
         SystemMessage(content=SYSTEM_RULES + HISTORIAN_PROMPT),
         HumanMessage(content=_build_user_message(state)),
     ])
@@ -51,7 +58,7 @@ def historian_node(state: CommentaryState) -> dict:
 
 
 def economist_node(state: CommentaryState) -> dict:
-    response = llm.invoke([
+    response = _get_llm().invoke([
         SystemMessage(content=SYSTEM_RULES + ECONOMIST_PROMPT),
         HumanMessage(content=_build_user_message(state)),
     ])
@@ -59,7 +66,7 @@ def economist_node(state: CommentaryState) -> dict:
 
 
 def philosopher_node(state: CommentaryState) -> dict:
-    response = llm.invoke([
+    response = _get_llm().invoke([
         SystemMessage(content=SYSTEM_RULES + PHILOSOPHER_PROMPT),
         HumanMessage(content=_build_user_message(state)),
     ])

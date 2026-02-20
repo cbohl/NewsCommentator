@@ -1,8 +1,13 @@
 import logging
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .database import create_all
 from .routers import articles, health
@@ -23,6 +28,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="News Commentator", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(articles.router)
 app.include_router(health.router)

@@ -1,9 +1,12 @@
+import Layout from "./components/Layout";
+import Home from "./pages/Home";
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <h1 className="text-2xl font-bold p-4">News Commentator</h1>
-    </div>
-  )
+    <Layout>
+      <Home />
+    </Layout>
+  );
 }
 
-export default App
+export default App;

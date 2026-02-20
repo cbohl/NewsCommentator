@@ -1,10 +1,10 @@
 import feedparser
 
 
-REUTERS_RSS_URL = "https://www.rss.reuters.com/news/world"
+BBC_WORLD_RSS_URL = "https://feeds.bbci.co.uk/news/world/rss.xml"
 
 
-def fetch_rss_articles(url: str = REUTERS_RSS_URL) -> list[dict]:
+def fetch_rss_articles(url: str = BBC_WORLD_RSS_URL, limit: int = 1) -> list[dict]:
     feed = feedparser.parse(url)
     articles = []
     for entry in feed.entries:
@@ -13,4 +13,4 @@ def fetch_rss_articles(url: str = REUTERS_RSS_URL) -> list[dict]:
             "url": entry.link,
             "title": entry.title,
         })
-    return articles
+    return articles[:limit]
