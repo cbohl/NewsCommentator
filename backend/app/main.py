@@ -29,9 +29,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="News Commentator", lifespan=lifespan)
 
+import os
+
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
