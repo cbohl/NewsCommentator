@@ -5,7 +5,7 @@ APP_DIR="/opt/news-commentator"
 
 # --- Install system dependencies ---
 dnf update -y
-dnf install -y python3.11 python3.11-pip nginx git
+dnf install -y python3.11 python3.11-pip nginx git rsync
 
 # --- Create app directory ---
 mkdir -p "$APP_DIR/backend"
