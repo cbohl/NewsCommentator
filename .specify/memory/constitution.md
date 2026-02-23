@@ -76,7 +76,7 @@ The processing pipeline follows this immutable sequence:
 1. **RSS Fetch** — Pull latest items from Reuters RSS feed.
 2. **Deduplication** — Check each GUID/URL against SQLite; skip known articles.
 3. **Extraction** — Retrieve full text via Jina AI Reader.
-4. **LangGraph Execution** — Run Historian → Economist → Philosopher nodes sequentially against shared state.
+4. **LangGraph Execution** — Run all three persona nodes sequentially in a randomized order against shared state. Later nodes may reference earlier nodes' comments.
 5. **Persistence** — Store article + all three comments in SQLite.
 6. **Error Handling** — Any failure at steps 3–5 logs to `error_log` and continues to the next article.
 
@@ -99,8 +99,9 @@ Modifications require:
 3. A backwards-compatibility assessment — existing data and APIs must not break.
 4. An updated version number and amendment date below.
 
-**Version**: 1.1.0 | **Ratified**: 2026-02-19 | **Last Amended**: 2026-02-19
+**Version**: 1.2.0 | **Ratified**: 2026-02-19 | **Last Amended**: 2026-02-20
 
 ### Amendment Log
 
 - **1.1.0 (2026-02-19)**: Changed LLM Provider from Claude (Anthropic API) to OpenAI (GPT-5-nano). Rationale: maintainer preference. No backwards-compatibility impact — no existing data depends on the LLM provider.
+- **1.2.0 (2026-02-20)**: Changed LangGraph execution from fixed order (Historian → Economist → Philosopher) to randomized order per article, with later nodes able to reference earlier comments. Rationale: creates more natural panel-discussion dynamics and varied output. No backwards-compatibility impact — existing stored comments are unaffected.

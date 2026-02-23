@@ -68,17 +68,49 @@ PHILOSOPHER_PROMPT = (
 )
 
 
-def _build_user_message(state: CommentaryState) -> str:
-    return (
+PERSONA_LABELS = {
+    "historian": "Historian",
+    "economist": "Economist",
+    "philosopher": "Philosopher",
+}
+
+PERSONA_PROMPTS = {
+    "historian": HISTORIAN_PROMPT,
+    "economist": ECONOMIST_PROMPT,
+    "philosopher": PHILOSOPHER_PROMPT,
+}
+
+
+def _get_prior_comments(state: CommentaryState, current_persona: str) -> str:
+    parts = []
+    for persona in ("historian", "economist", "philosopher"):
+        if persona == current_persona:
+            continue
+        comment = state.get(f"{persona}_comment", "")
+        if comment:
+            parts.append(f"{PERSONA_LABELS[persona]}: {comment}")
+    return "\n\n".join(parts)
+
+
+def _build_user_message(state: CommentaryState, current_persona: str) -> str:
+    msg = (
         f"Article Title: {state['article_title']}\n\n"
         f"Article Text:\n{state['article_text'][:3000]}"
     )
+    prior = _get_prior_comments(state, current_persona)
+    if prior:
+        msg += (
+            f"\n\n---\nYour colleagues have already weighed in:\n\n{prior}\n\n"
+            "You may agree, disagree, or build on what they said — or ignore them entirely "
+            "and give your own independent take."
+        )
+    return msg
 
 
 def historian_node(state: CommentaryState) -> dict:
     response = _get_llm().invoke([
         SystemMessage(content=SYSTEM_RULES + HISTORIAN_PROMPT),
-        HumanMessage(content=_build_user_message(state)),
+        HumanMessage(content=_build_user_message(state, "historian")),
     ])
     return {"historian_comment": response.content}
 
@@ -86,7 +118,7 @@ def historian_node(state: CommentaryState) -> dict:
 def economist_node(state: CommentaryState) -> dict:
     response = _get_llm().invoke([
         SystemMessage(content=SYSTEM_RULES + ECONOMIST_PROMPT),
-        HumanMessage(content=_build_user_message(state)),
+        HumanMessage(content=_build_user_message(state, "economist")),
     ])
     return {"economist_comment": response.content}
 
@@ -94,6 +126,6 @@ def economist_node(state: CommentaryState) -> dict:
 def philosopher_node(state: CommentaryState) -> dict:
     response = _get_llm().invoke([
         SystemMessage(content=SYSTEM_RULES + PHILOSOPHER_PROMPT),
-        HumanMessage(content=_build_user_message(state)),
+        HumanMessage(content=_build_user_message(state, "philosopher")),
     ])
     return {"philosopher_comment": response.content}

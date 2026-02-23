@@ -1,11 +1,12 @@
 import logging
+import random
 import traceback
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
-from ..graph.workflow import commentary_graph
+from ..graph.workflow import build_commentary_graph
 from ..models import Article, Comment, ErrorLog
 from .extractor import extract_full_text
 from .rss import fetch_rss_articles
@@ -13,6 +14,8 @@ from .rss import fetch_rss_articles
 logger = logging.getLogger(__name__)
 
 last_successful_run: datetime | None = None
+
+PERSONAS = ["historian", "economist", "philosopher"]
 
 
 def process_new_articles(limit: int = 1):
@@ -33,7 +36,12 @@ def process_new_articles(limit: int = 1):
             try:
                 full_text = extract_full_text(item["url"])
 
-                result = commentary_graph.invoke({
+                order = PERSONAS.copy()
+                random.shuffle(order)
+                logger.info("Execution order for '%s': %s", item["title"], " → ".join(order))
+
+                graph = build_commentary_graph(order)
+                result = graph.invoke({
                     "article_title": item["title"],
                     "article_text": full_text,
                     "article_url": item["url"],
@@ -41,6 +49,7 @@ def process_new_articles(limit: int = 1):
                     "economist_comment": "",
                     "philosopher_comment": "",
                     "error_flag": False,
+                    "execution_order": order,
                 })
 
                 article = Article(
@@ -52,7 +61,7 @@ def process_new_articles(limit: int = 1):
                 db.add(article)
                 db.flush()
 
-                for persona in ("historian", "economist", "philosopher"):
+                for persona in PERSONAS:
                     comment = Comment(
                         article_id=article.id,
                         persona=persona,

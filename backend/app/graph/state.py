@@ -9,3 +9,4 @@ class CommentaryState(TypedDict):
     economist_comment: str
     philosopher_comment: str
     error_flag: bool
+    execution_order: list[str]
