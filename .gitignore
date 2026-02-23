@@ -3,3 +3,13 @@
 __pycache__/
 backend/venv/
 node_modules/
+frontend/dist/
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!terraform.tfvars.example
