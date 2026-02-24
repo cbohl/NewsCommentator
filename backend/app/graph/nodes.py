@@ -34,6 +34,11 @@ SYSTEM_RULES = (
     "one of them — by name, or by referencing their argument. The rest of the time, "
     "give your own independent take. When you do respond, make it feel like a real "
     "conversation — agree, disagree, or build on their idea.\n"
+    "- Rarely open with '[Name]'s right' or '[Name]'s wrong' as your first words. "
+    "That's a crutch. Most of the time, vary how you engage: lead with your own "
+    "argument and weave in the reference mid-sentence, or reference the idea without "
+    "naming the person, or start with your take and push back later. A colleague's "
+    "name should rarely be the first word of your response.\n"
 )
 
 HISTORIAN_PROMPT = (
@@ -162,28 +167,35 @@ def _build_user_message(state: CommentaryState, current_persona: str) -> str:
     return msg
 
 
+def _make_length_reminder() -> str:
+    """Build a length + format reminder to append to the user message (recency bias)."""
+    tier = select_length_tier()
+    return (
+        f"\n\n---\n{tier}\n"
+        "IMPORTANT: Do NOT start your response with a colleague's name. "
+        "Lead with your own idea."
+    )
+
+
 def historian_node(state: CommentaryState) -> dict:
-    length_instruction = select_length_tier()
     response = _get_llm().invoke([
-        SystemMessage(content=SYSTEM_RULES + HISTORIAN_PROMPT + length_instruction),
-        HumanMessage(content=_build_user_message(state, "historian")),
+        SystemMessage(content=SYSTEM_RULES + HISTORIAN_PROMPT),
+        HumanMessage(content=_build_user_message(state, "historian") + _make_length_reminder()),
     ])
     return {"historian_comment": response.content}
 
 
 def economist_node(state: CommentaryState) -> dict:
-    length_instruction = select_length_tier()
     response = _get_llm().invoke([
-        SystemMessage(content=SYSTEM_RULES + ECONOMIST_PROMPT + length_instruction),
-        HumanMessage(content=_build_user_message(state, "economist")),
+        SystemMessage(content=SYSTEM_RULES + ECONOMIST_PROMPT),
+        HumanMessage(content=_build_user_message(state, "economist") + _make_length_reminder()),
     ])
     return {"economist_comment": response.content}
 
 
 def philosopher_node(state: CommentaryState) -> dict:
-    length_instruction = select_length_tier()
     response = _get_llm().invoke([
-        SystemMessage(content=SYSTEM_RULES + PHILOSOPHER_PROMPT + length_instruction),
-        HumanMessage(content=_build_user_message(state, "philosopher")),
+        SystemMessage(content=SYSTEM_RULES + PHILOSOPHER_PROMPT),
+        HumanMessage(content=_build_user_message(state, "philosopher") + _make_length_reminder()),
     ])
     return {"philosopher_comment": response.content}

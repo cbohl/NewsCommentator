@@ -103,8 +103,7 @@ def build_chat_messages(
     conversation: list[ChatMessage],
 ) -> list[SystemMessage | HumanMessage | AIMessage]:
     """Build LLM message list for a persona in article-scoped chat."""
-    length_instruction = select_length_tier()
-    system_content = SYSTEM_RULES + PERSONA_PROMPTS[persona] + CHAT_SUFFIX + length_instruction
+    system_content = SYSTEM_RULES + PERSONA_PROMPTS[persona] + CHAT_SUFFIX
     msgs: list[SystemMessage | HumanMessage | AIMessage] = [
         SystemMessage(content=system_content)
     ]
@@ -141,6 +140,10 @@ def build_chat_messages(
                 msgs.append(
                     HumanMessage(content=f"[{label} said]: {msg.content}")
                 )
+
+    # Append length tier as final instruction (recency bias)
+    tier = select_length_tier()
+    msgs.append(HumanMessage(content=f"[INSTRUCTION] {tier} Do NOT start your response with a colleague's name."))
 
     return msgs
 
