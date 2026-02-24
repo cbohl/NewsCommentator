@@ -9,7 +9,7 @@ _llm = None
 def _get_llm():
     global _llm
     if _llm is None:
-        _llm = ChatOpenAI(model="gpt-5-nano")
+        _llm = ChatOpenAI(model="gpt-5.2")
     return _llm
 
 SYSTEM_RULES = (

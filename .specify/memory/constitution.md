@@ -57,7 +57,7 @@ Full-text article extraction MUST use the `https://r.jina.ai/{url}` prefixing me
 | Text Extraction | Jina AI Reader (`r.jina.ai`) | Yes    |
 | Data Source     | Reuters RSS                  | Yes    |
 | Frontend        | React (Vite) + Tailwind CSS  | Yes    |
-| LLM Provider    | OpenAI (GPT-5-nano)          | Yes    |
+| LLM Provider    | OpenAI (GPT-5.2)             | Yes    |
 
 Stack changes require a constitutional amendment with explicit rationale.
 
@@ -99,7 +99,7 @@ Modifications require:
 3. A backwards-compatibility assessment — existing data and APIs must not break.
 4. An updated version number and amendment date below.
 
-**Version**: 1.3.1 | **Ratified**: 2026-02-19 | **Last Amended**: 2026-02-23
+**Version**: 1.3.2 | **Ratified**: 2026-02-19 | **Last Amended**: 2026-02-23
 
 ### Amendment Log
 
@@ -107,3 +107,4 @@ Modifications require:
 - **1.2.0 (2026-02-20)**: Changed LangGraph execution from fixed order (Historian → Economist → Philosopher) to randomized order per article, with later nodes able to reference earlier comments. Rationale: creates more natural panel-discussion dynamics and varied output. No backwards-compatibility impact — existing stored comments are unaffected.
 - **1.3.0 (2026-02-23)**: Replaced generic Historian/Economist/Philosopher personas with named characters — Dr. Margaret "Maggie" Chandrasekaran (Historian), Dr. Timothy "Tim" Brennan (Economist), and Sofia Reyes (Philosopher) — each with distinct personalities, credentials, and voice. Rationale: creates recognizable, distinct voices instead of interchangeable expert commentary. No backwards-compatibility impact — existing stored comments are unaffected.
 - **1.3.1 (2026-02-23)**: Refined Article III voice standard — added target range of 30–100 words with max 150, encouraging short punchy responses. Rationale: LLMs default to filling the word limit; explicit shorter targets produce more natural length variation. No backwards-compatibility impact.
+- **1.3.2 (2026-02-23)**: Upgraded LLM from GPT-5-nano to GPT-5.2. Rationale: larger model follows nuanced prompt instructions (length variation, personality, interaction rate) significantly better. No backwards-compatibility impact.
