@@ -9,7 +9,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           Expert AI commentary on the latest news
         </p>
       </header>
-      <main className="max-w-4xl mx-auto px-4 py-8">{children}</main>
+      <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>
     </div>
   );
 }
