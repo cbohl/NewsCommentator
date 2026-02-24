@@ -5,7 +5,9 @@
 ## Phase 1: Backend Changes
 
 - [x] T001 Change model from `gpt-5-nano` to `gpt-5.2` in `_get_llm()` in `backend/app/graph/nodes.py`
-- [x] T002 Rewrite SYSTEM_RULES with explicit SHORT/MEDIUM/LONG length tiers and percentage targets in `backend/app/graph/nodes.py`
+- [x] T002 Simplify SYSTEM_RULES — remove tier self-selection, keep hard cap of 150 words in `backend/app/graph/nodes.py`
+- [x] T002a Add `select_length_tier()` helper using `random.choices` with weights [30, 50, 20] in `backend/app/graph/nodes.py`
+- [x] T002b Inject selected tier as direct instruction into system prompt in each node function in `backend/app/graph/nodes.py`
 
 ## Phase 2: Constitution Amendments
 

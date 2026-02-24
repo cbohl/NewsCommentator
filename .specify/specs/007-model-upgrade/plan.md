@@ -28,18 +28,32 @@ Single-line change in `_get_llm()`:
 _llm = ChatOpenAI(model="gpt-5.2")  # was gpt-5-nano
 ```
 
-### SYSTEM_RULES Rewrite
+### Server-Side Length Tier Selection
 
-Replace the existing length guidance with explicit tiers:
+Instead of asking the LLM to self-select a tier (which it ignores), the server picks the tier via `random.choices` and injects a direct instruction.
 
-```
-CRITICAL — LENGTH RULES:
-- You MUST vary your word count. Pick ONE of these lengths for each response:
-  SHORT (15–40 words): A single sharp sentence or two. Use this ~30% of the time.
-  MEDIUM (50–90 words): A focused paragraph. Use this ~50% of the time.
-  LONG (100–150 words): A full argument. Use this only ~20% of the time.
-- Decide your length BEFORE you start writing. Do NOT default to long.
-```
+**Implementation**:
+
+1. Define a helper `select_length_tier()` that returns a tier string:
+   ```python
+   import random
+
+   LENGTH_TIERS = {
+       "SHORT": "YOUR ASSIGNED LENGTH: SHORT (15–40 words). Write one or two punchy sentences. Do NOT exceed 40 words.",
+       "MEDIUM": "YOUR ASSIGNED LENGTH: MEDIUM (50–90 words). Write a focused paragraph. Do NOT exceed 90 words.",
+       "LONG": "YOUR ASSIGNED LENGTH: LONG (100–150 words). Develop a full argument. Do NOT exceed 150 words.",
+   }
+
+   def select_length_tier() -> str:
+       tier = random.choices(["SHORT", "MEDIUM", "LONG"], weights=[30, 50, 20], k=1)[0]
+       return LENGTH_TIERS[tier]
+   ```
+
+2. Each node function calls `select_length_tier()` and appends the result to the system message.
+
+3. SYSTEM_RULES is simplified — remove the tier self-selection block, keep only:
+   - Hard cap of 150 words
+   - "Do NOT default to long" as a general reminder
 
 ### Constitution Updates
 

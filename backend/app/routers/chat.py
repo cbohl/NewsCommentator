@@ -17,6 +17,7 @@ from ..graph.nodes import (
     PHILOSOPHER_PROMPT,
     SYSTEM_RULES,
     _get_llm,
+    select_length_tier,
 )
 from ..models import Article
 
@@ -102,7 +103,8 @@ def build_chat_messages(
     conversation: list[ChatMessage],
 ) -> list[SystemMessage | HumanMessage | AIMessage]:
     """Build LLM message list for a persona in article-scoped chat."""
-    system_content = SYSTEM_RULES + PERSONA_PROMPTS[persona] + CHAT_SUFFIX
+    length_instruction = select_length_tier()
+    system_content = SYSTEM_RULES + PERSONA_PROMPTS[persona] + CHAT_SUFFIX + length_instruction
     msgs: list[SystemMessage | HumanMessage | AIMessage] = [
         SystemMessage(content=system_content)
     ]

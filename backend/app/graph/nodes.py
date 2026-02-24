@@ -1,3 +1,5 @@
+import random
+
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -16,12 +18,7 @@ SYSTEM_RULES = (
     "You are a sharp, opinionated expert commentator on a panel with two colleagues. "
     "Write the way a real expert would talk if quoted in the New York Times "
     "or on a podcast — natural, conversational, with a clear point of view.\n\n"
-    "CRITICAL — LENGTH RULES:\n"
-    "- You MUST vary your word count. Pick ONE of these lengths for each response:\n"
-    "  SHORT (15–40 words): A single sharp sentence or two. Use this ~30% of the time.\n"
-    "  MEDIUM (50–90 words): A focused paragraph. Use this ~50% of the time.\n"
-    "  LONG (100–150 words): A full argument. Use this only ~20% of the time.\n"
-    "- Decide your length BEFORE you start writing. Do NOT default to long.\n\n"
+    "HARD RULE: Never exceed 150 words. Most responses should be well under that.\n\n"
     "Other rules:\n"
     "- Write in flowing prose only. No bullet points, no numbered lists, "
     "no colons used as headers or separators, no structured formatting of any kind.\n"
@@ -105,6 +102,27 @@ PHILOSOPHER_PROMPT = (
 )
 
 
+LENGTH_TIERS = {
+    "SHORT": (
+        "\n\nYOUR ASSIGNED LENGTH: SHORT (15–40 words). "
+        "Write one or two punchy sentences. Do NOT exceed 40 words."
+    ),
+    "MEDIUM": (
+        "\n\nYOUR ASSIGNED LENGTH: MEDIUM (50–90 words). "
+        "Write a focused paragraph. Do NOT exceed 90 words."
+    ),
+    "LONG": (
+        "\n\nYOUR ASSIGNED LENGTH: LONG (100–150 words). "
+        "Develop a full argument. Do NOT exceed 150 words."
+    ),
+}
+
+
+def select_length_tier() -> str:
+    tier = random.choices(["SHORT", "MEDIUM", "LONG"], weights=[30, 50, 20], k=1)[0]
+    return LENGTH_TIERS[tier]
+
+
 PERSONA_LABELS = {
     "historian": "Maggie (Historian)",
     "economist": "Tim (Economist)",
@@ -145,24 +163,27 @@ def _build_user_message(state: CommentaryState, current_persona: str) -> str:
 
 
 def historian_node(state: CommentaryState) -> dict:
+    length_instruction = select_length_tier()
     response = _get_llm().invoke([
-        SystemMessage(content=SYSTEM_RULES + HISTORIAN_PROMPT),
+        SystemMessage(content=SYSTEM_RULES + HISTORIAN_PROMPT + length_instruction),
         HumanMessage(content=_build_user_message(state, "historian")),
     ])
     return {"historian_comment": response.content}
 
 
 def economist_node(state: CommentaryState) -> dict:
+    length_instruction = select_length_tier()
     response = _get_llm().invoke([
-        SystemMessage(content=SYSTEM_RULES + ECONOMIST_PROMPT),
+        SystemMessage(content=SYSTEM_RULES + ECONOMIST_PROMPT + length_instruction),
         HumanMessage(content=_build_user_message(state, "economist")),
     ])
     return {"economist_comment": response.content}
 
 
 def philosopher_node(state: CommentaryState) -> dict:
+    length_instruction = select_length_tier()
     response = _get_llm().invoke([
-        SystemMessage(content=SYSTEM_RULES + PHILOSOPHER_PROMPT),
+        SystemMessage(content=SYSTEM_RULES + PHILOSOPHER_PROMPT + length_instruction),
         HumanMessage(content=_build_user_message(state, "philosopher")),
     ])
     return {"philosopher_comment": response.content}
