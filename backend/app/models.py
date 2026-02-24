@@ -16,7 +16,9 @@ class Article(Base):
     full_text: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 
-    comments: Mapped[list["Comment"]] = relationship(back_populates="article")
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="article", order_by="Comment.position"
+    )
 
 
 class Comment(Base):
@@ -28,6 +30,7 @@ class Comment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     article_id: Mapped[int] = mapped_column(ForeignKey("articles.id"))
     persona: Mapped[str] = mapped_column(String)  # historian | economist | philosopher
+    position: Mapped[int] = mapped_column(default=0)  # execution order: 0, 1, 2
     text: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 

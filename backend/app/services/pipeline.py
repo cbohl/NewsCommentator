@@ -61,10 +61,11 @@ def process_new_articles(limit: int = 1):
                 db.add(article)
                 db.flush()
 
-                for persona in PERSONAS:
+                for position, persona in enumerate(order):
                     comment = Comment(
                         article_id=article.id,
                         persona=persona,
+                        position=position,
                         text=result[f"{persona}_comment"],
                     )
                     db.add(comment)

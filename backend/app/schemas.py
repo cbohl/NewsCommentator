@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class CommentOut(BaseModel):
     id: int
     persona: str
+    position: int
     text: str
     created_at: datetime
 
