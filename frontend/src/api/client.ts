@@ -16,6 +16,12 @@ export interface Article {
   comments: Comment[];
 }
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  persona?: string;
+  content: string;
+}
+
 export async function fetchArticles(
   skip = 0,
   limit = 20
@@ -25,4 +31,66 @@ export async function fetchArticles(
   );
   if (!res.ok) throw new Error(`Failed to fetch articles: ${res.status}`);
   return res.json();
+}
+
+export function streamChat(
+  articleId: number,
+  messages: ChatMessage[],
+  onEvent: (event: string, data: Record<string, string>) => void,
+  onError: (error: Error) => void
+): AbortController {
+  const controller = new AbortController();
+
+  fetch(`${API_BASE}/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ article_id: articleId, messages }),
+    signal: controller.signal,
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        onError(new Error(`Chat request failed: ${res.status}`));
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        onError(new Error("No response body"));
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let currentEvent = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ") && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              onEvent(currentEvent, data);
+            } catch {
+              // skip malformed data
+            }
+            currentEvent = "";
+          }
+        }
+      }
+    })
+    .catch((err) => {
+      if (err.name !== "AbortError") {
+        onError(err);
+      }
+    });
+
+  return controller;
 }

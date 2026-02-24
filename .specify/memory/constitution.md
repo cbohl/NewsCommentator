@@ -85,6 +85,7 @@ The processing pipeline follows this immutable sequence:
 - All API responses use JSON.
 - The frontend consumes a REST API served by FastAPI.
 - No GraphQL, no WebSockets unless constitutionally amended.
+- SSE (Server-Sent Events) is permitted for streaming responses (e.g., chat). SSE is uni-directional HTTP streaming, not a bidirectional protocol like WebSockets.
 
 ## Governance
 
@@ -99,7 +100,7 @@ Modifications require:
 3. A backwards-compatibility assessment — existing data and APIs must not break.
 4. An updated version number and amendment date below.
 
-**Version**: 1.3.2 | **Ratified**: 2026-02-19 | **Last Amended**: 2026-02-23
+**Version**: 1.4.0 | **Ratified**: 2026-02-19 | **Last Amended**: 2026-02-24
 
 ### Amendment Log
 
@@ -108,3 +109,4 @@ Modifications require:
 - **1.3.0 (2026-02-23)**: Replaced generic Historian/Economist/Philosopher personas with named characters — Dr. Margaret "Maggie" Chandrasekaran (Historian), Dr. Timothy "Tim" Brennan (Economist), and Sofia Reyes (Philosopher) — each with distinct personalities, credentials, and voice. Rationale: creates recognizable, distinct voices instead of interchangeable expert commentary. No backwards-compatibility impact — existing stored comments are unaffected.
 - **1.3.1 (2026-02-23)**: Refined Article III voice standard — added target range of 30–100 words with max 150, encouraging short punchy responses. Rationale: LLMs default to filling the word limit; explicit shorter targets produce more natural length variation. No backwards-compatibility impact.
 - **1.3.2 (2026-02-23)**: Upgraded LLM from GPT-5-nano to GPT-5.2. Rationale: larger model follows nuanced prompt instructions (length variation, personality, interaction rate) significantly better. No backwards-compatibility impact.
+- **1.4.0 (2026-02-24)**: Added SSE (Server-Sent Events) as a permitted API transport for streaming chat responses. SSE is uni-directional HTTP streaming, distinct from WebSockets. The chat feature is ephemeral (no database persistence) and does not alter the existing article commentary pipeline. Rationale: enables real-time token-by-token streaming for interactive chat with the persona panel. No backwards-compatibility impact — existing REST endpoints are unchanged.

@@ -1,4 +1,5 @@
 import type { Article } from "../api/client";
+import ChatPanel from "./ChatPanel";
 import CommentBlock from "./CommentBlock";
 
 export default function ArticleCard({ article }: { article: Article }) {
@@ -25,6 +26,7 @@ export default function ArticleCard({ article }: { article: Article }) {
           <CommentBlock key={comment.id} comment={comment} />
         ))}
       </div>
+      <ChatPanel articleId={article.id} />
     </div>
   );
 }

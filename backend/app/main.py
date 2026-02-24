@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import create_all
-from .routers import articles, health
+from .routers import articles, chat, health
 from .services.pipeline import process_new_articles
 
 logging.basicConfig(level=logging.INFO)
@@ -41,6 +41,7 @@ app.add_middleware(
 )
 
 app.include_router(articles.router)
+app.include_router(chat.router)
 app.include_router(health.router)
 
 
