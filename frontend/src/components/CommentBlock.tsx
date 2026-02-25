@@ -15,24 +15,45 @@ export default function CommentBlock({ comment }: { comment: Comment }) {
   };
 
   return (
-    <div className={`border rounded-lg p-5 ${style.color} flex gap-4`}>
-      {style.avatar && (
-        <img
-          src={style.avatar}
-          alt={style.label}
-          className="w-32 h-40 rounded-lg object-cover flex-shrink-0"
-        />
-      )}
-      <div className="min-w-0">
-        <span className="text-xs font-semibold uppercase tracking-wide">
-          {style.label}
-        </span>
-        {style.subtitle && (
-          <span className="block text-xs opacity-70 mt-0.5">
-            {style.subtitle}
-          </span>
+    <div className={`border rounded-lg p-5 ${style.color}`}>
+      {/* Mobile: circle avatar + name header */}
+      <div className="flex items-center gap-3 sm:hidden">
+        {style.avatar && (
+          <img
+            src={style.avatar}
+            alt={style.label}
+            className="w-11 h-11 rounded-full object-cover object-top flex-shrink-0"
+          />
         )}
-        <p className="mt-2 text-sm leading-relaxed">{comment.text}</p>
+        <div>
+          <span className="text-sm font-semibold">{style.label}</span>
+          {style.subtitle && (
+            <span className="block text-xs opacity-70">{style.subtitle}</span>
+          )}
+        </div>
+      </div>
+      <p className="mt-3 text-sm leading-relaxed sm:hidden">{comment.text}</p>
+
+      {/* Desktop: big image side-by-side with text */}
+      <div className="hidden sm:flex gap-4">
+        {style.avatar && (
+          <img
+            src={style.avatar}
+            alt={style.label}
+            className="w-32 h-40 rounded-lg object-cover object-top flex-shrink-0"
+          />
+        )}
+        <div className="min-w-0">
+          <span className="text-xs font-semibold uppercase tracking-wide">
+            {style.label}
+          </span>
+          {style.subtitle && (
+            <span className="block text-xs opacity-70 mt-0.5">
+              {style.subtitle}
+            </span>
+          )}
+          <p className="mt-2 text-sm leading-relaxed">{comment.text}</p>
+        </div>
       </div>
     </div>
   );
