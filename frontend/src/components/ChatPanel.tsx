@@ -183,26 +183,65 @@ export default function ChatPanel({ articleId }: { articleId: number }) {
 
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="w-full text-sm text-gray-500 hover:text-gray-700 py-3 border-t border-gray-100 transition-colors"
-      >
-        Chat with the panel about this article...
-      </button>
+      <div className="border-t border-gray-200 pt-4">
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex -space-x-2">
+              <img src="/avatars/maggie.png" alt="Maggie" className="w-8 h-8 rounded-full object-cover ring-2 ring-white" />
+              <img src="/avatars/tim.png" alt="Tim" className="w-8 h-8 rounded-full object-cover ring-2 ring-white" />
+              <img src="/avatars/sofia.png" alt="Sofia" className="w-8 h-8 rounded-full object-cover ring-2 ring-white" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900">Ask the Panel</h4>
+              <p className="text-xs text-gray-500">Chat with Maggie, Tim, and Sofia about this article</p>
+            </div>
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setIsOpen(true);
+              if (input.trim()) handleSubmit();
+            }}
+            className="flex gap-2"
+          >
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onFocus={() => setIsOpen(true)}
+              placeholder="What do you think about this, Maggie?"
+              className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+            />
+            <button
+              type="submit"
+              className="bg-gray-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-800 transition-colors"
+            >
+              Send
+            </button>
+          </form>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="border-t border-gray-200 pt-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-gray-700">
-          Chat with the Panel
-        </h4>
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2">
+            <img src="/avatars/maggie.png" alt="Maggie" className="w-7 h-7 rounded-full object-cover ring-2 ring-white" />
+            <img src="/avatars/tim.png" alt="Tim" className="w-7 h-7 rounded-full object-cover ring-2 ring-white" />
+            <img src="/avatars/sofia.png" alt="Sofia" className="w-7 h-7 rounded-full object-cover ring-2 ring-white" />
+          </div>
+          <h4 className="text-sm font-semibold text-gray-900">
+            Panel Chat
+          </h4>
+        </div>
         <button
           onClick={() => setIsOpen(false)}
           className="text-xs text-gray-400 hover:text-gray-600"
         >
-          Close
+          Minimize
         </button>
       </div>
 
@@ -213,8 +252,8 @@ export default function ChatPanel({ articleId }: { articleId: number }) {
       >
         {messages.length === 0 && !streamingPersona && (
           <p className="text-sm text-gray-400 text-center py-4">
-            Ask Maggie, Tim, and Sofia about this article. Mention a name to get
-            their response first.
+            Ask Maggie, Tim, and Sofia anything about this article.
+            Mention a name to get their response first.
           </p>
         )}
         {messages.map(renderMessage)}
