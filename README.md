@@ -124,7 +124,3 @@ All features are developed through GitHub SpecKit's spec → plan → tasks work
 | 008-streaming-chat      | Per-article SSE streaming chat             | Complete |
 
 The project is governed by a [constitution](.specify/memory/constitution.md) that locks core architectural decisions and requires amendments for changes.
-
-## License
-
-MIT
