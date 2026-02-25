@@ -115,6 +115,27 @@ resource "aws_cloudfront_distribution" "frontend" {
     max_ttl     = 0
   }
 
+  # /chat/* -> EC2 backend (SSE streaming, no caching)
+  ordered_cache_behavior {
+    path_pattern           = "/chat/*"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "ec2-backend"
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method", "Content-Type"]
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
   # SPA routing: serve index.html for 403 (S3 returns 403 for missing keys)
   custom_error_response {
     error_code            = 403
