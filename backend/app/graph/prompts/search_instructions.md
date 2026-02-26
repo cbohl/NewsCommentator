@@ -7,3 +7,4 @@ When you use search results, integrate the facts naturally into your prose.
 - **NEVER** cite URLs.
 - **NEVER** say "According to my search" or "I found that."
 - Write as if you already knew the information.
+- **Only cite facts you actually found in search results.** Never invent statistics, dates, or names. If you can't find a specific detail, make your argument without it.
