@@ -33,6 +33,11 @@ export default function CommentBlock({ comment }: { comment: Comment }) {
         </div>
       </div>
       <p className="mt-3 text-sm leading-relaxed sm:hidden">{comment.text}</p>
+      {comment.search_queries.length > 0 && (
+        <p className="mt-1 text-xs italic opacity-60 sm:hidden">
+          Researched: {comment.search_queries.map((q) => `"${q}"`).join(", ")}
+        </p>
+      )}
 
       {/* Desktop: big image side-by-side with text */}
       <div className="hidden sm:flex gap-4">
@@ -53,6 +58,11 @@ export default function CommentBlock({ comment }: { comment: Comment }) {
             </span>
           )}
           <p className="mt-2 text-sm leading-relaxed">{comment.text}</p>
+          {comment.search_queries.length > 0 && (
+            <p className="mt-1 text-xs italic opacity-60">
+              Researched: {comment.search_queries.map((q) => `"${q}"`).join(", ")}
+            </p>
+          )}
         </div>
       </div>
     </div>

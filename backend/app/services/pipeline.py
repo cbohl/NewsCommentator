@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 import traceback
@@ -48,6 +49,9 @@ def process_new_articles(limit: int = 1):
                     "historian_comment": "",
                     "economist_comment": "",
                     "philosopher_comment": "",
+                    "historian_searches": [],
+                    "economist_searches": [],
+                    "philosopher_searches": [],
                     "error_flag": False,
                     "execution_order": order,
                 })
@@ -62,11 +66,13 @@ def process_new_articles(limit: int = 1):
                 db.flush()
 
                 for position, persona in enumerate(order):
+                    searches = result.get(f"{persona}_searches", [])
                     comment = Comment(
                         article_id=article.id,
                         persona=persona,
                         position=position,
                         text=result[f"{persona}_comment"],
+                        search_queries=json.dumps(searches) if searches else None,
                     )
                     db.add(comment)
 

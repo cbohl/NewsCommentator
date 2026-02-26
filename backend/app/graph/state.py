@@ -8,5 +8,8 @@ class CommentaryState(TypedDict):
     historian_comment: str
     economist_comment: str
     philosopher_comment: str
+    historian_searches: list[str]
+    economist_searches: list[str]
+    philosopher_searches: list[str]
     error_flag: bool
     execution_order: list[str]

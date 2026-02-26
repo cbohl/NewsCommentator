@@ -4,6 +4,7 @@ export interface Comment {
   id: number;
   persona: string;
   text: string;
+  search_queries: string[];
   created_at: string;
 }
 

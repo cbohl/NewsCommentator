@@ -32,6 +32,7 @@ class Comment(Base):
     persona: Mapped[str] = mapped_column(String)  # historian | economist | philosopher
     position: Mapped[int] = mapped_column(default=0)  # execution order: 0, 1, 2
     text: Mapped[str] = mapped_column(Text)
+    search_queries: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 
     article: Mapped["Article"] = relationship(back_populates="comments")

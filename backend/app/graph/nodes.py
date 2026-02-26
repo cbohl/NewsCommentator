@@ -59,10 +59,11 @@ def _get_pipeline_llm(temperature: float = 0.9):
     return llm
 
 
-def _invoke_with_tools(messages: list, *, temperature: float = 0.9, max_tool_calls: int = 2) -> str:
+def _invoke_with_tools(messages: list, *, temperature: float = 0.9, max_tool_calls: int = 2) -> tuple[str, list[str]]:
     llm = _get_pipeline_llm(temperature)
     tool = _get_search_tool()
     tool_calls_made = 0
+    search_queries: list[str] = []
 
     while True:
         response = llm.invoke(messages)
@@ -72,7 +73,7 @@ def _invoke_with_tools(messages: list, *, temperature: float = 0.9, max_tool_cal
                 logger.info("Tool-calling loop complete — %d search(es) made", tool_calls_made)
             else:
                 logger.info("No tool calls — LLM responded directly")
-            return response.content
+            return response.content, search_queries
 
         messages.append(response)
         for tc in response.tool_calls:
@@ -86,6 +87,7 @@ def _invoke_with_tools(messages: list, *, temperature: float = 0.9, max_tool_cal
             try:
                 query = tc["args"].get("query", tc["args"])
                 logger.info("Tavily search [%d/%d]: %s", tool_calls_made + 1, max_tool_calls, query)
+                search_queries.append(str(query))
                 result = tool.invoke(tc["args"])
                 logger.info("Tavily result: %s", str(result)[:500])
                 messages.append(ToolMessage(
@@ -183,8 +185,8 @@ def historian_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + HISTORIAN_PROMPT),
         HumanMessage(content=_build_user_message(state, "historian") + _make_length_reminder()),
     ]
-    content = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["historian"])
-    return {"historian_comment": content}
+    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["historian"])
+    return {"historian_comment": content, "historian_searches": searches}
 
 
 def economist_node(state: CommentaryState) -> dict:
@@ -192,8 +194,8 @@ def economist_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + ECONOMIST_PROMPT),
         HumanMessage(content=_build_user_message(state, "economist") + _make_length_reminder()),
     ]
-    content = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["economist"])
-    return {"economist_comment": content}
+    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["economist"])
+    return {"economist_comment": content, "economist_searches": searches}
 
 
 def philosopher_node(state: CommentaryState) -> dict:
@@ -201,5 +203,5 @@ def philosopher_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + PHILOSOPHER_PROMPT),
         HumanMessage(content=_build_user_message(state, "philosopher") + _make_length_reminder()),
     ]
-    content = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["philosopher"])
-    return {"philosopher_comment": content}
+    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["philosopher"])
+    return {"philosopher_comment": content, "philosopher_searches": searches}
