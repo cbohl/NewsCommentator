@@ -30,8 +30,12 @@ def _get_search_tool():
     if not api_key:
         logger.warning("TAVILY_API_KEY not set — personas will operate without web search")
         return None
-    from langchain_tavily import TavilySearch
-    _tavily_tool = TavilySearch(max_results=3)
+    try:
+        from langchain_tavily import TavilySearch
+        _tavily_tool = TavilySearch(max_results=3)
+    except Exception as e:
+        logger.warning("Failed to initialize Tavily search: %s", e)
+        return None
     return _tavily_tool
 
 
@@ -52,17 +56,24 @@ def _invoke_with_tools(messages: list, max_tool_calls: int = 2) -> str:
         response = llm.invoke(messages)
 
         if not response.tool_calls or not tool:
+            if tool_calls_made > 0:
+                logger.info("Tool-calling loop complete — %d search(es) made", tool_calls_made)
+            else:
+                logger.info("No tool calls — LLM responded directly")
             return response.content
 
         messages.append(response)
         for tc in response.tool_calls:
             if tool_calls_made >= max_tool_calls:
+                logger.info("Tool call limit reached (%d), forcing final response", max_tool_calls)
                 messages.append(ToolMessage(
                     content="Tool call limit reached. Write your response now.",
                     tool_call_id=tc["id"],
                 ))
                 continue
             try:
+                query = tc["args"].get("query", tc["args"])
+                logger.info("Tavily search [%d/%d]: %s", tool_calls_made + 1, max_tool_calls, query)
                 result = tool.invoke(tc["args"])
                 messages.append(ToolMessage(
                     content=str(result),
@@ -104,12 +115,13 @@ SYSTEM_RULES = (
 )
 
 SEARCH_INSTRUCTIONS = (
-    "\n\nYou have access to a web search tool. Use it ONLY when specific facts, "
-    "data, or context would genuinely strengthen your argument — for example, "
-    "exact statistics, historical dates, or recent developments not in the article. "
-    "Most articles will not require a search. When you do use search results, "
-    "integrate the facts naturally into your prose. NEVER cite URLs. NEVER say "
-    "'According to my search' or 'I found that.' Write as if you already knew the information."
+    "\n\nYou have access to a web search tool. You SHOULD use it to look up "
+    "specific facts that would strengthen your argument — statistics, historical dates, "
+    "names, prior incidents, economic data, or recent developments not covered in the article. "
+    "A quick search often turns up a concrete detail that makes your take sharper. "
+    "When you use search results, integrate the facts naturally into your prose. "
+    "NEVER cite URLs. NEVER say 'According to my search' or 'I found that.' "
+    "Write as if you already knew the information."
 )
 
 HISTORIAN_PROMPT = (
