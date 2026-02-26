@@ -16,16 +16,21 @@ def _load_prompt(name: str) -> str:
 
 logger = logging.getLogger(__name__)
 
-_llm = None
+PERSONA_TEMPERATURES = {
+    "historian": 1.2,
+    "economist": 0.9,
+    "philosopher": 0.8,
+}
+
+_llm_cache: dict[float, ChatOpenAI] = {}
 _tavily_tool = None
 _tavily_checked = False
 
 
-def _get_llm():
-    global _llm
-    if _llm is None:
-        _llm = ChatOpenAI(model="gpt-5.2")
-    return _llm
+def _get_llm(temperature: float = 0.9) -> ChatOpenAI:
+    if temperature not in _llm_cache:
+        _llm_cache[temperature] = ChatOpenAI(model="gpt-5.2", temperature=temperature)
+    return _llm_cache[temperature]
 
 
 def _get_search_tool():
@@ -46,16 +51,16 @@ def _get_search_tool():
     return _tavily_tool
 
 
-def _get_pipeline_llm():
-    llm = _get_llm()
+def _get_pipeline_llm(temperature: float = 0.9):
+    llm = _get_llm(temperature)
     tool = _get_search_tool()
     if tool:
         return llm.bind_tools([tool])
     return llm
 
 
-def _invoke_with_tools(messages: list, max_tool_calls: int = 2) -> str:
-    llm = _get_pipeline_llm()
+def _invoke_with_tools(messages: list, *, temperature: float = 0.9, max_tool_calls: int = 2) -> str:
+    llm = _get_pipeline_llm(temperature)
     tool = _get_search_tool()
     tool_calls_made = 0
 
@@ -82,6 +87,7 @@ def _invoke_with_tools(messages: list, max_tool_calls: int = 2) -> str:
                 query = tc["args"].get("query", tc["args"])
                 logger.info("Tavily search [%d/%d]: %s", tool_calls_made + 1, max_tool_calls, query)
                 result = tool.invoke(tc["args"])
+                logger.info("Tavily result: %s", str(result)[:500])
                 messages.append(ToolMessage(
                     content=str(result),
                     tool_call_id=tc["id"],
@@ -156,7 +162,8 @@ def _build_user_message(state: CommentaryState, current_persona: str) -> str:
         msg += (
             f"\n\n---\nYour colleagues have already weighed in:\n\n{prior}\n\n"
             "You may agree, disagree, or build on what they said — or ignore them entirely "
-            "and give your own independent take."
+            "and give your own independent take. "
+            "Do NOT open with the same words or phrasing your colleagues used."
         )
     return msg
 
@@ -176,7 +183,7 @@ def historian_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + HISTORIAN_PROMPT),
         HumanMessage(content=_build_user_message(state, "historian") + _make_length_reminder()),
     ]
-    content = _invoke_with_tools(messages)
+    content = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["historian"])
     return {"historian_comment": content}
 
 
@@ -185,7 +192,7 @@ def economist_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + ECONOMIST_PROMPT),
         HumanMessage(content=_build_user_message(state, "economist") + _make_length_reminder()),
     ]
-    content = _invoke_with_tools(messages)
+    content = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["economist"])
     return {"economist_comment": content}
 
 
@@ -194,5 +201,5 @@ def philosopher_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + PHILOSOPHER_PROMPT),
         HumanMessage(content=_build_user_message(state, "philosopher") + _make_length_reminder()),
     ]
-    content = _invoke_with_tools(messages)
+    content = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["philosopher"])
     return {"philosopher_comment": content}
