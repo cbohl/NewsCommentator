@@ -9,7 +9,7 @@ Add Tavily web search as an optional LangChain tool available to each persona no
 ## Technical Context
 
 **Languages**: Python 3.12+
-**New dependencies**: `tavily-python` (provides `TavilySearchResults` tool for LangChain)
+**New dependencies**: `langchain-tavily` (official Tavily integration for LangChain, provides `TavilySearch`)
 **New env var**: `TAVILY_API_KEY`
 
 **Files to modify**:
@@ -46,7 +46,7 @@ Create the Tavily tool once at module level in `nodes.py`, guarded by the presen
 
 ```python
 import os
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 
 _tavily_tool = None
 
@@ -56,7 +56,7 @@ def _get_search_tool():
         api_key = os.environ.get("TAVILY_API_KEY")
         if not api_key:
             return None
-        _tavily_tool = TavilySearchResults(max_results=3)
+        _tavily_tool = TavilySearch(max_results=3)
     return _tavily_tool
 ```
 
@@ -212,10 +212,8 @@ if not os.environ.get("TAVILY_API_KEY"):
 
 ## Dependency
 
-`tavily-python` — Official Tavily Python SDK, used by LangChain's `TavilySearchResults` tool.
+`langchain-tavily` — Official Tavily integration for LangChain, providing `TavilySearch`.
 
 ```
-pip install tavily-python
+pip install langchain-tavily
 ```
-
-Also available via `langchain-community`, but `tavily-python` is the lighter, more direct dependency. LangChain's `TavilySearchResults` imports from `tavily-python` under the hood.

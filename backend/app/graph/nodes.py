@@ -1,11 +1,17 @@
+import logging
+import os
 import random
 
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 
 from .state import CommentaryState
 
+logger = logging.getLogger(__name__)
+
 _llm = None
+_tavily_tool = None
+_tavily_checked = False
 
 
 def _get_llm():
@@ -13,6 +19,62 @@ def _get_llm():
     if _llm is None:
         _llm = ChatOpenAI(model="gpt-5.2")
     return _llm
+
+
+def _get_search_tool():
+    global _tavily_tool, _tavily_checked
+    if _tavily_checked:
+        return _tavily_tool
+    _tavily_checked = True
+    api_key = os.environ.get("TAVILY_API_KEY")
+    if not api_key:
+        logger.warning("TAVILY_API_KEY not set — personas will operate without web search")
+        return None
+    from langchain_tavily import TavilySearch
+    _tavily_tool = TavilySearch(max_results=3)
+    return _tavily_tool
+
+
+def _get_pipeline_llm():
+    llm = _get_llm()
+    tool = _get_search_tool()
+    if tool:
+        return llm.bind_tools([tool])
+    return llm
+
+
+def _invoke_with_tools(messages: list, max_tool_calls: int = 2) -> str:
+    llm = _get_pipeline_llm()
+    tool = _get_search_tool()
+    tool_calls_made = 0
+
+    while True:
+        response = llm.invoke(messages)
+
+        if not response.tool_calls or not tool:
+            return response.content
+
+        messages.append(response)
+        for tc in response.tool_calls:
+            if tool_calls_made >= max_tool_calls:
+                messages.append(ToolMessage(
+                    content="Tool call limit reached. Write your response now.",
+                    tool_call_id=tc["id"],
+                ))
+                continue
+            try:
+                result = tool.invoke(tc["args"])
+                messages.append(ToolMessage(
+                    content=str(result),
+                    tool_call_id=tc["id"],
+                ))
+            except Exception as e:
+                logger.warning("Tavily search failed: %s", e)
+                messages.append(ToolMessage(
+                    content="Search unavailable. Write your response based on the article alone.",
+                    tool_call_id=tc["id"],
+                ))
+            tool_calls_made += 1
 
 SYSTEM_RULES = (
     "You are a sharp, opinionated expert commentator on a panel with two colleagues. "
@@ -39,6 +101,15 @@ SYSTEM_RULES = (
     "argument and weave in the reference mid-sentence, or reference the idea without "
     "naming the person, or start with your take and push back later. A colleague's "
     "name should rarely be the first word of your response.\n"
+)
+
+SEARCH_INSTRUCTIONS = (
+    "\n\nYou have access to a web search tool. Use it ONLY when specific facts, "
+    "data, or context would genuinely strengthen your argument — for example, "
+    "exact statistics, historical dates, or recent developments not in the article. "
+    "Most articles will not require a search. When you do use search results, "
+    "integrate the facts naturally into your prose. NEVER cite URLs. NEVER say "
+    "'According to my search' or 'I found that.' Write as if you already knew the information."
 )
 
 HISTORIAN_PROMPT = (
@@ -178,24 +249,27 @@ def _make_length_reminder() -> str:
 
 
 def historian_node(state: CommentaryState) -> dict:
-    response = _get_llm().invoke([
-        SystemMessage(content=SYSTEM_RULES + HISTORIAN_PROMPT),
+    messages = [
+        SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + HISTORIAN_PROMPT),
         HumanMessage(content=_build_user_message(state, "historian") + _make_length_reminder()),
-    ])
-    return {"historian_comment": response.content}
+    ]
+    content = _invoke_with_tools(messages)
+    return {"historian_comment": content}
 
 
 def economist_node(state: CommentaryState) -> dict:
-    response = _get_llm().invoke([
-        SystemMessage(content=SYSTEM_RULES + ECONOMIST_PROMPT),
+    messages = [
+        SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + ECONOMIST_PROMPT),
         HumanMessage(content=_build_user_message(state, "economist") + _make_length_reminder()),
-    ])
-    return {"economist_comment": response.content}
+    ]
+    content = _invoke_with_tools(messages)
+    return {"economist_comment": content}
 
 
 def philosopher_node(state: CommentaryState) -> dict:
-    response = _get_llm().invoke([
-        SystemMessage(content=SYSTEM_RULES + PHILOSOPHER_PROMPT),
+    messages = [
+        SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + PHILOSOPHER_PROMPT),
         HumanMessage(content=_build_user_message(state, "philosopher") + _make_length_reminder()),
-    ])
-    return {"philosopher_comment": response.content}
+    ]
+    content = _invoke_with_tools(messages)
+    return {"philosopher_comment": content}

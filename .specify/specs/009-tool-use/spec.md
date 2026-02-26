@@ -85,7 +85,7 @@ Tool use is restricted to the hourly pipeline. The live chat endpoint (`POST /ch
 - **FR-003**: Each persona MUST be limited to at most 2 tool calls per article to control cost and latency.
 - **FR-004**: If Tavily fails or times out (>10s), the node MUST fall back to generating commentary without search results.
 - **FR-005**: The chat endpoint (`POST /chat/stream`) MUST NOT bind any tools to the LLM.
-- **FR-006**: `tavily-python` (or `langchain-community[tavily]`) MUST be added to `backend/requirements.txt`.
+- **FR-006**: `langchain-tavily` MUST be added to `backend/requirements.txt`.
 - **FR-007**: `TAVILY_API_KEY` MUST be read from the environment. If absent, the pipeline MUST operate without tools and log a warning at startup.
 - **FR-008**: The system prompt MUST instruct the LLM to use search results naturally — no URL citations, no "According to my search" phrasing, no search-summary style.
 - **FR-009**: Tavily search results MUST be limited to `max_results=3` per search call.
@@ -93,7 +93,7 @@ Tool use is restricted to the hourly pipeline. The live chat endpoint (`POST /ch
 
 ### Key Entities
 
-- **TavilySearchResults**: LangChain tool wrapper for the Tavily search API. Configured with `max_results=3`.
+- **TavilySearch**: LangChain tool wrapper for the Tavily search API (from `langchain-tavily`). Configured with `max_results=3`.
 - **Tool-calling loop**: An iterative loop within each persona node where the LLM can call tools, receive results, and then produce a final text response.
 
 ## Success Criteria

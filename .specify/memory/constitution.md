@@ -58,6 +58,7 @@ Full-text article extraction MUST use the `https://r.jina.ai/{url}` prefixing me
 | Data Source     | Reuters RSS                  | Yes    |
 | Frontend        | React (Vite) + Tailwind CSS  | Yes    |
 | LLM Provider    | OpenAI (GPT-5.2)             | Yes    |
+| Web Search      | Tavily                       | Yes    |
 
 Stack changes require a constitutional amendment with explicit rationale.
 
@@ -100,7 +101,7 @@ Modifications require:
 3. A backwards-compatibility assessment — existing data and APIs must not break.
 4. An updated version number and amendment date below.
 
-**Version**: 1.4.0 | **Ratified**: 2026-02-19 | **Last Amended**: 2026-02-24
+**Version**: 1.5.0 | **Ratified**: 2026-02-19 | **Last Amended**: 2026-02-25
 
 ### Amendment Log
 
@@ -110,3 +111,4 @@ Modifications require:
 - **1.3.1 (2026-02-23)**: Refined Article III voice standard — added target range of 30–100 words with max 150, encouraging short punchy responses. Rationale: LLMs default to filling the word limit; explicit shorter targets produce more natural length variation. No backwards-compatibility impact.
 - **1.3.2 (2026-02-23)**: Upgraded LLM from GPT-5-nano to GPT-5.2. Rationale: larger model follows nuanced prompt instructions (length variation, personality, interaction rate) significantly better. No backwards-compatibility impact.
 - **1.4.0 (2026-02-24)**: Added SSE (Server-Sent Events) as a permitted API transport for streaming chat responses. SSE is uni-directional HTTP streaming, distinct from WebSockets. The chat feature is ephemeral (no database persistence) and does not alter the existing article commentary pipeline. Rationale: enables real-time token-by-token streaming for interactive chat with the persona panel. No backwards-compatibility impact — existing REST endpoints are unchanged.
+- **1.5.0 (2026-02-25)**: Added Tavily as the web search provider in the Technology Stack. Persona nodes in the hourly pipeline may optionally invoke Tavily web search via LangChain's tool-calling interface to ground commentary in real-world facts. Tool use is pipeline-only — the chat endpoint remains tool-free for latency reasons. Rationale: enables personas to look up specific facts, statistics, and context, producing higher-quality, more credible analysis. No backwards-compatibility impact — tool use is optional and the pipeline falls back gracefully if Tavily is unavailable.
