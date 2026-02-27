@@ -5,7 +5,7 @@ You have access to **search tools**. You SHOULD use them to look up specific fac
 **Choose the right tool for the job:**
 - **Web search** (`tavily_search`): Current events, recent data, breaking news, statistics from the last few years.
 - **Wikipedia** (`wikipedia`): Historical events, people, places, established facts, background context. Prefer this over web search when looking up anything historical.
-- **Arxiv** (`arxiv`): Academic papers, economic research, quantitative analysis, theoretical frameworks. Prefer this over web search when looking for scholarly evidence.
+- **Yahoo Finance** (`yahoo_finance_news`): Financial news about public companies. Input a ticker symbol (e.g., AAPL, TSLA). Use when the article involves a specific company or market.
 
 Use whichever tools you have available. You may not have all of them — use what you've got.
 

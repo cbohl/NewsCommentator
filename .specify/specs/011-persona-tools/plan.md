@@ -1,22 +1,24 @@
 # Implementation Plan: Persona-Specific Research Tools
 
-**Branch**: `add-footnotes` | **Date**: 2026-02-26 | **Spec**: `specs/011-persona-tools/spec.md`
+**Branch**: `give-additional-tools-to-agents` | **Date**: 2026-02-26 | **Spec**: `specs/011-persona-tools/spec.md`
 
 ## Summary
 
-Replace the single shared Tavily search tool with per-persona tool sets: historian gets Tavily + Wikipedia, economist gets Tavily + Arxiv, philosopher keeps Tavily only. Update the search metadata format from `list[str]` to `list[dict]` so footnotes show which tool was used for each query. Backwards-compatible with existing data.
+Replace the single shared Tavily search tool with per-persona tool sets: historian gets Tavily + Wikipedia, economist gets Tavily + Yahoo Finance, philosopher keeps Tavily only. Update the search metadata format from `list[str]` to `list[dict]` so footnotes show which tool was used for each query. Backwards-compatible with existing data.
 
 ## Technical Context
 
 **Languages**: Python 3.12+, TypeScript
-**New dependencies**: `langchain-community` (provides `WikipediaQueryRun`, `ArxivQueryRun`), `wikipedia` (underlying Wikipedia API lib), `arxiv` (underlying Arxiv API lib)
-**New env vars**: None (Wikipedia and Arxiv APIs are free and keyless)
+**New dependencies**: `langchain-community` (provides `WikipediaQueryRun`, `YahooFinanceNewsTool`), `wikipedia` (underlying Wikipedia API lib), `yfinance` (underlying Yahoo Finance lib)
+**New env vars**: None (Wikipedia and Yahoo Finance APIs are free and keyless)
 
 **Files to modify**:
-- `backend/requirements.txt` — Add `langchain-community`, `wikipedia`, `arxiv`
+- `backend/requirements.txt` — Add `langchain-community`, `wikipedia`, `yfinance`
 - `backend/app/graph/nodes.py` — Per-persona tool registry, multi-tool dispatch, source tracking
 - `backend/app/graph/state.py` — `list[str]` → `list[dict]` for search fields
 - `backend/app/graph/prompts/search_instructions.md` — Generalize to cover multiple tool types
+- `backend/app/graph/prompts/historian.md` — Add Wikipedia tool guidance
+- `backend/app/graph/prompts/economist.md` — Add Yahoo Finance tool guidance
 - `backend/app/schemas.py` — New `SearchQuery` model, backwards-compat validator
 - `frontend/src/api/client.ts` — New `SearchQuery` interface, update `Comment`
 - `frontend/src/components/CommentBlock.tsx` — Footnote shows source label
@@ -38,7 +40,7 @@ Replace the single shared Tavily search tool with per-persona tool sets: histori
 | IV. Idempotent Processing | PASS | No schema changes; old data handled by validator |
 | V. Resilience | PASS | Each tool failure falls back gracefully |
 | VII. Simplicity | PASS | Minimal new code; tools are standard LangChain wrappers |
-| Technology Stack | AMENDMENT 1.6.0 | Expand "Web Search: Tavily" → "Research Tools: Tavily, Wikipedia, Arxiv" |
+| Technology Stack | AMENDMENT 1.6.0 | Expand "Web Search: Tavily" → "Research Tools: Tavily, Wikipedia, Yahoo Finance" |
 
 ## Design
 
@@ -47,11 +49,12 @@ Replace the single shared Tavily search tool with per-persona tool sets: histori
 Replace `_get_search_tool()` with `_get_persona_tools(persona)` returning a list of tools:
 
 ```python
-from langchain_community.tools import WikipediaQueryRun, ArxivQueryRun
-from langchain_community.utilities import WikipediaAPIWrapper, ArxivAPIWrapper
+from langchain_community.tools import WikipediaQueryRun
+from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
+from langchain_community.utilities import WikipediaAPIWrapper
 
 _wikipedia_tool = None
-_arxiv_tool = None
+_yahoo_finance_tool = None
 
 def _get_wikipedia_tool():
     global _wikipedia_tool
@@ -59,17 +62,17 @@ def _get_wikipedia_tool():
         _wikipedia_tool = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper(top_k_results=2, doc_content_chars_max=2000))
     return _wikipedia_tool
 
-def _get_arxiv_tool():
-    global _arxiv_tool
-    if _arxiv_tool is None:
-        _arxiv_tool = ArxivQueryRun(api_wrapper=ArxivAPIWrapper(top_k_results=2, doc_content_chars_max=2000))
-    return _arxiv_tool
+def _get_yahoo_finance_tool():
+    global _yahoo_finance_tool
+    if _yahoo_finance_tool is None:
+        _yahoo_finance_tool = YahooFinanceNewsTool()
+    return _yahoo_finance_tool
 
 # Tool name → source label mapping
 TOOL_SOURCE_LABELS = {
     "tavily_search": "Web",
     "wikipedia": "Wikipedia",
-    "arxiv": "Arxiv",
+    "yahoo_finance_news": "Yahoo Finance",
 }
 
 def _get_persona_tools(persona: str) -> list:
@@ -81,7 +84,7 @@ def _get_persona_tools(persona: str) -> list:
     if persona == "historian":
         tools.append(_get_wikipedia_tool())
     elif persona == "economist":
-        tools.append(_get_arxiv_tool())
+        tools.append(_get_yahoo_finance_tool())
 
     return tools
 ```
@@ -228,27 +231,39 @@ In `CommentBlock.tsx`, footnotes show the source label:
 
 ### 8. Search instructions update
 
-Generalize `search_instructions.md` from "web search tool" to "search tools":
+Generalize `search_instructions.md` from "web search tool" to "search tools" with per-tool guidance:
 
-```markdown
-## Search Instructions
+- **Web search** (`tavily_search`): Current events, recent data, breaking news.
+- **Wikipedia** (`wikipedia`): Historical events, people, places, established facts. Prefer for anything historical.
+- **Yahoo Finance** (`yahoo_finance_news`): Financial news about public companies. Input a ticker symbol.
 
-You have access to **search tools**. You SHOULD use them to look up specific facts...
+### 9. RSS feed diversification
+
+Changed from BBC World-only to BBC World + BBC Business, shuffled randomly:
+
+```python
+BBC_FEEDS = [
+    "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://feeds.bbci.co.uk/news/business/rss.xml",
+]
 ```
 
-Add tool-specific guidance per persona in the prompt or keep it generic (the LLM will see the tool names/descriptions and use them appropriately).
+Podcasts/audio/video URLs are filtered out.
 
 ## Data Flow
 
 ```
 _get_persona_tools("historian")  → [TavilySearch, WikipediaQueryRun]
+_get_persona_tools("economist")  → [TavilySearch, YahooFinanceNewsTool]
   ↓
 _get_pipeline_llm(1.2, "historian") → llm.bind_tools([tavily, wikipedia])
+_get_pipeline_llm(0.9, "economist") → llm.bind_tools([tavily, yahoo_finance])
   ↓
 _invoke_with_tools(..., persona="historian", max_tool_calls=3)
   ↓
-  LLM calls "wikipedia" tool → {"query": "Durand Line", "source": "Wikipedia"}
-  LLM calls "tavily_search"  → {"query": "GDP growth 2025", "source": "Web"}
+  LLM calls "wikipedia" tool       → {"query": "Durand Line", "source": "Wikipedia"}
+  LLM calls "yahoo_finance_news"   → {"query": "AAPL", "source": "Yahoo Finance"}
+  LLM calls "tavily_search"        → {"query": "GDP growth 2025", "source": "Web"}
   ↓
 historian_node() → {"historian_comment": "...", "historian_searches": [{"query":..., "source":...}]}
   ↓
@@ -260,7 +275,7 @@ SQLite comments table → search_queries TEXT NULL (JSON)
   ↓
 GET /articles → CommentOut(search_queries=[SearchQuery(query="Durand Line", source="Wikipedia")])
   ↓
-CommentBlock.tsx → Researched: "Durand Line" (Wikipedia), "GDP growth 2025" (Web)
+CommentBlock.tsx → Researched: "Durand Line" (Wikipedia), "AAPL" (Yahoo Finance)
 ```
 
 ## Backwards Compatibility

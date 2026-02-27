@@ -26,13 +26,13 @@ _llm_cache: dict[float, ChatOpenAI] = {}
 _tavily_tool = None
 _tavily_checked = False
 _wikipedia_tool = None
-_arxiv_tool = None
+_yahoo_finance_tool = None
 
 # Tool name → display label for footnotes
 TOOL_SOURCE_LABELS = {
     "tavily_search": "Web",
     "wikipedia": "Wikipedia",
-    "arxiv": "Arxiv",
+    "yahoo_finance_news": "Yahoo Finance",
 }
 
 
@@ -75,19 +75,16 @@ def _get_wikipedia_tool():
     return _wikipedia_tool
 
 
-def _get_arxiv_tool():
-    global _arxiv_tool
-    if _arxiv_tool is None:
+def _get_yahoo_finance_tool():
+    global _yahoo_finance_tool
+    if _yahoo_finance_tool is None:
         try:
-            from langchain_community.tools import ArxivQueryRun
-            from langchain_community.utilities import ArxivAPIWrapper
-            _arxiv_tool = ArxivQueryRun(
-                api_wrapper=ArxivAPIWrapper(top_k_results=2, doc_content_chars_max=2000)
-            )
+            from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
+            _yahoo_finance_tool = YahooFinanceNewsTool()
         except Exception as e:
-            logger.warning("Failed to initialize Arxiv tool: %s", e)
+            logger.warning("Failed to initialize Yahoo Finance tool: %s", e)
             return None
-    return _arxiv_tool
+    return _yahoo_finance_tool
 
 
 def _get_persona_tools(persona: str) -> list:
@@ -101,9 +98,9 @@ def _get_persona_tools(persona: str) -> list:
         if wiki:
             tools.append(wiki)
     elif persona == "economist":
-        arxiv = _get_arxiv_tool()
-        if arxiv:
-            tools.append(arxiv)
+        yf = _get_yahoo_finance_tool()
+        if yf:
+            tools.append(yf)
 
     return tools
 
