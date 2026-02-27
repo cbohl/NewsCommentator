@@ -88,21 +88,15 @@ def _get_yahoo_finance_tool():
 
 
 def _get_persona_tools(persona: str) -> list:
-    tools = []
-    tavily = _get_search_tool()
-    if tavily:
-        tools.append(tavily)
-
     if persona == "historian":
         wiki = _get_wikipedia_tool()
-        if wiki:
-            tools.append(wiki)
+        return [wiki] if wiki else []
     elif persona == "economist":
         yf = _get_yahoo_finance_tool()
-        if yf:
-            tools.append(yf)
-
-    return tools
+        return [yf] if yf else []
+    else:  # philosopher
+        tavily = _get_search_tool()
+        return [tavily] if tavily else []
 
 
 def _get_pipeline_llm(temperature: float = 0.9, persona: str = "philosopher"):
@@ -245,7 +239,7 @@ def historian_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + HISTORIAN_PROMPT),
         HumanMessage(content=_build_user_message(state, "historian") + _make_length_reminder()),
     ]
-    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["historian"], persona="historian", max_tool_calls=3)
+    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["historian"], persona="historian")
     return {"historian_comment": content, "historian_searches": searches}
 
 
@@ -254,7 +248,7 @@ def economist_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + ECONOMIST_PROMPT),
         HumanMessage(content=_build_user_message(state, "economist") + _make_length_reminder()),
     ]
-    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["economist"], persona="economist", max_tool_calls=3)
+    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["economist"], persona="economist")
     return {"economist_comment": content, "economist_searches": searches}
 
 
