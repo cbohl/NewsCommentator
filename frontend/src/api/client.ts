@@ -1,10 +1,15 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+export interface SearchQuery {
+  query: string;
+  source: string;
+}
+
 export interface Comment {
   id: number;
   persona: string;
   text: string;
-  search_queries: string[];
+  search_queries: SearchQuery[];
   created_at: string;
 }
 

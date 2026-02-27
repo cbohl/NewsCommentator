@@ -4,12 +4,17 @@ from datetime import datetime
 from pydantic import BaseModel, field_validator
 
 
+class SearchQuery(BaseModel):
+    query: str
+    source: str
+
+
 class CommentOut(BaseModel):
     id: int
     persona: str
     position: int
     text: str
-    search_queries: list[str] = []
+    search_queries: list[SearchQuery] = []
     created_at: datetime
 
     @field_validator("search_queries", mode="before")
@@ -18,7 +23,10 @@ class CommentOut(BaseModel):
         if v is None:
             return []
         if isinstance(v, str):
-            return json.loads(v)
+            v = json.loads(v)
+        # Backwards compat: convert old list[str] to list[dict]
+        if v and isinstance(v[0], str):
+            return [{"query": s, "source": "Web"} for s in v]
         return v
 
     model_config = {"from_attributes": True}

@@ -35,7 +35,7 @@ export default function CommentBlock({ comment }: { comment: Comment }) {
       <p className="mt-3 text-sm leading-relaxed sm:hidden">{comment.text}</p>
       {comment.search_queries.length > 0 && (
         <p className="mt-1 text-xs italic opacity-60 sm:hidden">
-          Researched: {comment.search_queries.map((q) => `"${q}"`).join(", ")}
+          Researched: {comment.search_queries.map((sq) => `"${sq.query}" (${sq.source})`).join(", ")}
         </p>
       )}
 
@@ -60,7 +60,7 @@ export default function CommentBlock({ comment }: { comment: Comment }) {
           <p className="mt-2 text-sm leading-relaxed">{comment.text}</p>
           {comment.search_queries.length > 0 && (
             <p className="mt-1 text-xs italic opacity-60">
-              Researched: {comment.search_queries.map((q) => `"${q}"`).join(", ")}
+              Researched: {comment.search_queries.map((sq) => `"${sq.query}" (${sq.source})`).join(", ")}
             </p>
           )}
         </div>

@@ -25,6 +25,15 @@ PERSONA_TEMPERATURES = {
 _llm_cache: dict[float, ChatOpenAI] = {}
 _tavily_tool = None
 _tavily_checked = False
+_wikipedia_tool = None
+_arxiv_tool = None
+
+# Tool name → display label for footnotes
+TOOL_SOURCE_LABELS = {
+    "tavily_search": "Web",
+    "wikipedia": "Wikipedia",
+    "arxiv": "Arxiv",
+}
 
 
 def _get_llm(temperature: float = 0.9) -> ChatOpenAI:
@@ -51,24 +60,72 @@ def _get_search_tool():
     return _tavily_tool
 
 
-def _get_pipeline_llm(temperature: float = 0.9):
+def _get_wikipedia_tool():
+    global _wikipedia_tool
+    if _wikipedia_tool is None:
+        try:
+            from langchain_community.tools import WikipediaQueryRun
+            from langchain_community.utilities import WikipediaAPIWrapper
+            _wikipedia_tool = WikipediaQueryRun(
+                api_wrapper=WikipediaAPIWrapper(top_k_results=2, doc_content_chars_max=2000)
+            )
+        except Exception as e:
+            logger.warning("Failed to initialize Wikipedia tool: %s", e)
+            return None
+    return _wikipedia_tool
+
+
+def _get_arxiv_tool():
+    global _arxiv_tool
+    if _arxiv_tool is None:
+        try:
+            from langchain_community.tools import ArxivQueryRun
+            from langchain_community.utilities import ArxivAPIWrapper
+            _arxiv_tool = ArxivQueryRun(
+                api_wrapper=ArxivAPIWrapper(top_k_results=2, doc_content_chars_max=2000)
+            )
+        except Exception as e:
+            logger.warning("Failed to initialize Arxiv tool: %s", e)
+            return None
+    return _arxiv_tool
+
+
+def _get_persona_tools(persona: str) -> list:
+    tools = []
+    tavily = _get_search_tool()
+    if tavily:
+        tools.append(tavily)
+
+    if persona == "historian":
+        wiki = _get_wikipedia_tool()
+        if wiki:
+            tools.append(wiki)
+    elif persona == "economist":
+        arxiv = _get_arxiv_tool()
+        if arxiv:
+            tools.append(arxiv)
+
+    return tools
+
+
+def _get_pipeline_llm(temperature: float = 0.9, persona: str = "philosopher"):
     llm = _get_llm(temperature)
-    tool = _get_search_tool()
-    if tool:
-        return llm.bind_tools([tool])
-    return llm
+    tools = _get_persona_tools(persona)
+    if tools:
+        return llm.bind_tools(tools), tools
+    return llm, []
 
 
-def _invoke_with_tools(messages: list, *, temperature: float = 0.9, max_tool_calls: int = 2) -> tuple[str, list[str]]:
-    llm = _get_pipeline_llm(temperature)
-    tool = _get_search_tool()
+def _invoke_with_tools(messages: list, *, temperature: float = 0.9, persona: str, max_tool_calls: int = 2) -> tuple[str, list[dict]]:
+    llm, tools = _get_pipeline_llm(temperature, persona)
+    tools_by_name = {t.name: t for t in tools}
     tool_calls_made = 0
-    search_queries: list[str] = []
+    search_queries: list[dict] = []
 
     while True:
         response = llm.invoke(messages)
 
-        if not response.tool_calls or not tool:
+        if not response.tool_calls or not tools:
             if tool_calls_made > 0:
                 logger.info("Tool-calling loop complete — %d search(es) made", tool_calls_made)
             else:
@@ -77,6 +134,9 @@ def _invoke_with_tools(messages: list, *, temperature: float = 0.9, max_tool_cal
 
         messages.append(response)
         for tc in response.tool_calls:
+            tool_name = tc["name"]
+            source_label = TOOL_SOURCE_LABELS.get(tool_name, tool_name)
+
             if tool_calls_made >= max_tool_calls:
                 logger.info("Tool call limit reached (%d), forcing final response", max_tool_calls)
                 messages.append(ToolMessage(
@@ -86,16 +146,19 @@ def _invoke_with_tools(messages: list, *, temperature: float = 0.9, max_tool_cal
                 continue
             try:
                 query = tc["args"].get("query", tc["args"])
-                logger.info("Tavily search [%d/%d]: %s", tool_calls_made + 1, max_tool_calls, query)
-                search_queries.append(str(query))
+                logger.info("%s search [%d/%d]: %s", source_label, tool_calls_made + 1, max_tool_calls, query)
+                search_queries.append({"query": str(query), "source": source_label})
+                tool = tools_by_name.get(tool_name)
+                if tool is None:
+                    raise ValueError(f"Unknown tool: {tool_name}")
                 result = tool.invoke(tc["args"])
-                logger.info("Tavily result: %s", str(result)[:500])
+                logger.info("%s result: %s", source_label, str(result)[:500])
                 messages.append(ToolMessage(
                     content=str(result),
                     tool_call_id=tc["id"],
                 ))
             except Exception as e:
-                logger.warning("Tavily search failed: %s", e)
+                logger.warning("%s search failed: %s", source_label, e)
                 messages.append(ToolMessage(
                     content="Search unavailable. Write your response based on the article alone.",
                     tool_call_id=tc["id"],
@@ -185,7 +248,7 @@ def historian_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + HISTORIAN_PROMPT),
         HumanMessage(content=_build_user_message(state, "historian") + _make_length_reminder()),
     ]
-    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["historian"])
+    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["historian"], persona="historian", max_tool_calls=3)
     return {"historian_comment": content, "historian_searches": searches}
 
 
@@ -194,7 +257,7 @@ def economist_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + ECONOMIST_PROMPT),
         HumanMessage(content=_build_user_message(state, "economist") + _make_length_reminder()),
     ]
-    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["economist"])
+    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["economist"], persona="economist", max_tool_calls=3)
     return {"economist_comment": content, "economist_searches": searches}
 
 
@@ -203,5 +266,5 @@ def philosopher_node(state: CommentaryState) -> dict:
         SystemMessage(content=SYSTEM_RULES + SEARCH_INSTRUCTIONS + PHILOSOPHER_PROMPT),
         HumanMessage(content=_build_user_message(state, "philosopher") + _make_length_reminder()),
     ]
-    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["philosopher"])
+    content, searches = _invoke_with_tools(messages, temperature=PERSONA_TEMPERATURES["philosopher"], persona="philosopher")
     return {"philosopher_comment": content, "philosopher_searches": searches}
