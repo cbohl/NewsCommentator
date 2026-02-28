@@ -138,12 +138,16 @@ def _invoke_with_tools(messages: list, *, temperature: float = 0.9, persona: str
             try:
                 query = tc["args"].get("query", tc["args"])
                 logger.info("%s search [%d/%d]: %s", source_label, tool_calls_made + 1, max_tool_calls, query)
-                search_queries.append({"query": str(query), "source": source_label})
                 tool = tools_by_name.get(tool_name)
                 if tool is None:
                     raise ValueError(f"Unknown tool: {tool_name}")
                 result = tool.invoke(tc["args"])
                 logger.info("%s result: %s", source_label, str(result)[:500])
+                search_queries.append({
+                    "query": str(query),
+                    "source": source_label,
+                    "result_snippet": str(result)[:500],
+                })
                 messages.append(ToolMessage(
                     content=str(result),
                     tool_call_id=tc["id"],
