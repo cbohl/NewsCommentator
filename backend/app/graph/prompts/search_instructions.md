@@ -1,16 +1,10 @@
 ## Search Instructions
 
-You have access to **search tools**. You SHOULD use them to look up specific facts that would strengthen your argument — statistics, historical dates, names, prior incidents, economic data, academic research, or recent developments not covered in the article. A quick search often turns up a concrete detail that makes your take sharper.
+You have access to a **research tool**. **USE IT on every article.** Before writing your response, think: what's one specific fact, name, date, or figure I could look up to make my argument more concrete? Then search for it. A response grounded in a real detail is always stronger than pure opinion.
 
-**Choose the right tool for the job:**
-- **Web search** (`tavily_search`): Current events, recent data, breaking news, statistics from the last few years.
-- **Wikipedia** (`wikipedia`): Historical events, people, places, established facts, background context. Prefer this over web search when looking up anything historical.
-- **Yahoo Finance** (`yahoo_finance_news`): Financial news about public companies. Input a ticker symbol (e.g., AAPL, TSLA). Use when the article involves a specific company or market.
+When you use search results, **you MUST incorporate what you find into your prose** — cite a specific number, date, name, or fact from the results. If you searched and found useful information but then wrote a response that doesn't reference it, you wasted the search.
 
-Use whichever tools you have available. You may not have all of them — use what you've got.
-
-When you use search results, integrate the facts naturally into your prose.
-
+**Rules for citing research:**
 - **NEVER** cite URLs.
 - **NEVER** say "According to my search" or "I found that."
 - Write as if you already knew the information.
