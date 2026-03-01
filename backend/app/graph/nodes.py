@@ -67,7 +67,7 @@ def _get_wikipedia_tool():
             from langchain_community.tools import WikipediaQueryRun
             from langchain_community.utilities import WikipediaAPIWrapper
             _wikipedia_tool = WikipediaQueryRun(
-                api_wrapper=WikipediaAPIWrapper(top_k_results=2, doc_content_chars_max=2000)
+                api_wrapper=WikipediaAPIWrapper(top_k_results=3, doc_content_chars_max=2000)
             )
         except Exception as e:
             logger.warning("Failed to initialize Wikipedia tool: %s", e)
@@ -143,10 +143,42 @@ def _invoke_with_tools(messages: list, *, temperature: float = 0.9, persona: str
                     raise ValueError(f"Unknown tool: {tool_name}")
                 result = tool.invoke(tc["args"])
                 logger.info("%s result: %s", source_label, str(result)[:500])
+                # Extract/construct source URLs based on tool type
+                urls: list[dict] = []
+                if tool_name == "tavily_search":
+                    if isinstance(result, list):
+                        for r in result:
+                            if isinstance(r, dict) and r.get("url"):
+                                urls.append({"url": r["url"], "title": r.get("title", r["url"])})
+                elif tool_name == "wikipedia":
+                    # Parse all page titles from result ("Page: {title}\nSummary: ...")
+                    for line in str(result).split("\n"):
+                        if line.startswith("Page: "):
+                            page_title = line.removeprefix("Page: ").strip()
+                            urls.append({"url": "https://en.wikipedia.org/wiki/" + page_title.replace(" ", "_"), "title": page_title})
+                elif tool_name == "yahoo_finance_news":
+                    # Match article titles from result against yfinance news to get URLs
+                    result_str = str(result)
+                    if "No news found" not in result_str:
+                        try:
+                            import yfinance
+                            titles = {block.split("\n")[0].strip() for block in result_str.split("\n\n") if block.strip()}
+                            ticker_obj = yfinance.Ticker(str(query))
+                            for news_item in (ticker_obj.news or []):
+                                content = news_item.get("content", {})
+                                if content.get("contentType") == "STORY":
+                                    article_url = content.get("canonicalUrl", {}).get("url")
+                                    article_title = content.get("title", "")
+                                    if article_url and article_title in titles:
+                                        urls.append({"url": article_url, "title": article_title})
+                        except Exception:
+                            pass
+
                 search_queries.append({
                     "query": str(query),
                     "source": source_label,
                     "result_snippet": str(result)[:500],
+                    "urls": urls,
                 })
                 messages.append(ToolMessage(
                     content=str(result),
