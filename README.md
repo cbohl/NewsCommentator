@@ -2,7 +2,7 @@
 
 ### **[View Live Site](https://d1b6dhneso8mh0.cloudfront.net)**
 
-An AI-powered expert commentary panel that analyzes breaking news through three distinct perspectives — a historian, an economist, and a philosopher. Each persona has a real name, credentials, personality, and voice. They comment on articles from BBC World News every hour, and readers can chat with them in real-time via streaming responses.
+An AI-powered expert commentary panel that analyzes breaking news through three distinct perspectives — a historian, an economist, and a philosopher. Each persona has a real name, credentials, personality, and voice. They comment on articles from BBC Business, Technology, and World feeds every hour, and readers can chat with them in real-time via streaming responses.
 
 Built with **[GitHub SpecKit](https://github.com/speckit/speckit)** for spec-driven development, **[LangChain](https://www.langchain.com/) / [LangGraph](https://langchain-ai.github.io/langgraph/)** for AI orchestration, and **[Terraform](https://www.terraform.io/)** for infrastructure-as-code deployment on AWS.
 
@@ -20,8 +20,10 @@ They comment in a randomized order on each article. Later panelists can see (and
 
 ## Features
 
-- **Automated commentary pipeline** — fetches BBC World News via RSS every hour, extracts full text via Jina AI Reader, and generates three expert commentaries per article
+- **Automated commentary pipeline** — fetches BBC Business, Technology, and World feeds via RSS every hour, extracts full text via Jina AI Reader, and generates three expert commentaries per article
+- **Feed categories** — articles are tagged by feed and filterable via a tab bar UI (Business | Technology | World)
 - **Distinct AI personas** — each panelist has a unique voice, worldview, and interaction style, enforced through detailed character prompts with few-shot examples
+- **Research-grounded commentary** — each persona has access to a research tool (Wikipedia for the historian, Yahoo Finance for the economist, web search for the philosopher) and must cite specific facts from their searches
 - **Interactive chat** — readers can chat with the panel about any article via SSE streaming. Mention a panelist by name and they respond first
 - **Server-side length control** — response length tiers (SHORT/MEDIUM/LONG) are selected randomly by the server and injected into prompts, producing natural variation instead of uniformly long responses
 - **Spec-driven development** — every feature is specified, planned, and tracked through GitHub SpecKit before implementation
@@ -33,6 +35,7 @@ Getting three AI personas to sound like real people instead of LLM outputs was a
 - **Server-side length control** — Early versions asked the LLM to self-regulate response length ("use SHORT ~30% of the time"). It didn't work — the model ignored probabilistic instructions and wrote long responses every time. The fix was structured generation: Python selects the tier via `random.choices`, then injects a direct command like `"YOUR ASSIGNED LENGTH: SHORT (15–40 words)"` at the end of the user message (exploiting recency bias). Length control moved from an unreliable prompt suggestion to a deterministic code decision.
 - **Randomized execution order via LangGraph** — Each article's commentary runs through a LangGraph `StateGraph` where the three persona nodes execute sequentially, but the order is shuffled per article. Later nodes see earlier comments in the shared state, so the conversation dynamics change naturally — who responds to whom varies every time.
 - **Anti-pattern rule** — The model fell into a rut of opening every response with "[Name]'s right, but..." which made the conversation feel templated. Adding "Do NOT start your response with a colleague's name" to the prompt broke the pattern and forced more varied rhetorical approaches.
+- **Prompt testing with DeepEval** — Prompts are tested against a suite of deterministic and LLM-judged metrics via [DeepEval](https://github.com/confident-ai/deepeval). Deterministic checks catch word count violations, forbidden AI phrases ("It is important to note", "Let's delve into"), and bullet points. GEval metrics use an LLM judge to evaluate persona voice distinctiveness, fluff-free openers, and whether research tool results are actually cited in the commentary. The baseline run exposed that Sofia's philosophical voice was indistinguishable from generic punditry and that tool results were being ignored — both fixed through prompt iteration guided by the test results.
 
 ## Architecture
 
@@ -67,8 +70,9 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Create .env with your API key
+# Create .env with your API keys
 echo "OPENAI_API_KEY=sk-..." > .env
+echo "TAVILY_API_KEY=tvly-..." >> .env
 
 # Start the server (auto-reloads on changes)
 uvicorn app.main:app --reload
@@ -77,7 +81,11 @@ uvicorn app.main:app --reload
 The API runs at `http://localhost:8000`. The pipeline triggers automatically every hour, or manually:
 
 ```bash
-curl -X POST "http://localhost:8000/trigger?limit=3"
+# Trigger all feeds (1 article per feed)
+curl -X POST "http://localhost:8000/trigger?limit=1"
+
+# Trigger a specific feed
+curl -X POST "http://localhost:8000/trigger?limit=3&feed=business"
 ```
 
 ### Frontend
@@ -122,5 +130,14 @@ All features are developed through GitHub SpecKit's spec → plan → tasks work
 | 006-ui-polish           | Avatars, display order, layout             | Complete |
 | 007-model-upgrade       | GPT-5.2, server-side length tiers          | Complete |
 | 008-streaming-chat      | Per-article SSE streaming chat             | Complete |
+| 009-search-tools        | Tavily web search for personas             | Complete |
+| 010-search-display      | Display search queries in UI               | Complete |
+| 011-source-links        | Source URLs in footnotes                    | Complete |
+| 012-wikipedia           | Wikipedia tool for historian                | Complete |
+| 013-yahoo-finance       | Yahoo Finance tool for economist            | Complete |
+| 014-prompt-testing      | DeepEval prompt quality tests              | Complete |
+| 015-prompt-improvements | Prompt refinement from test results        | Complete |
+| 016-tool-refinement     | One specialized tool per persona            | Complete |
+| 017-feed-categories     | Feed categories with tab selector          | Complete |
 
 The project is governed by a [constitution](.specify/memory/constitution.md) that locks core architectural decisions and requires amendments for changes.
