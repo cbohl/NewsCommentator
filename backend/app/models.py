@@ -14,6 +14,7 @@ class Article(Base):
     url: Mapped[str] = mapped_column(String, unique=True)
     title: Mapped[str] = mapped_column(String)
     full_text: Mapped[str] = mapped_column(Text)
+    feed: Mapped[str] = mapped_column(String, default="world", index=True)
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 
     comments: Mapped[list["Comment"]] = relationship(

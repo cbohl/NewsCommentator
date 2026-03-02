@@ -13,10 +13,14 @@ router = APIRouter()
 async def list_articles(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    feed: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
+    query = db.query(Article)
+    if feed is not None:
+        query = query.filter(Article.feed == feed)
     articles = (
-        db.query(Article)
+        query
         .order_by(Article.created_at.desc())
         .offset(skip)
         .limit(limit)
@@ -34,6 +38,9 @@ async def get_article(article_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/trigger")
-async def trigger_pipeline(limit: int = Query(5, ge=1, le=30)):
-    process_new_articles(limit=limit)
-    return {"status": "pipeline triggered", "limit": limit}
+async def trigger_pipeline(
+    limit: int = Query(5, ge=1, le=30),
+    feed: str | None = Query(None),
+):
+    process_new_articles(limit=limit, feed=feed)
+    return {"status": "pipeline triggered", "limit": limit, "feed": feed}

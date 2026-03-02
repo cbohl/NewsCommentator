@@ -57,6 +57,7 @@ class ArticleOut(BaseModel):
     guid: str
     url: str
     title: str
+    feed: str
     created_at: datetime
     comments: list[CommentOut]
 

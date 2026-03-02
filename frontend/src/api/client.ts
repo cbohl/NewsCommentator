@@ -24,6 +24,7 @@ export interface Article {
   guid: string;
   url: string;
   title: string;
+  feed: string;
   created_at: string;
   comments: Comment[];
 }
@@ -36,11 +37,15 @@ export interface ChatMessage {
 
 export async function fetchArticles(
   skip = 0,
-  limit = 20
+  limit = 20,
+  feed?: string
 ): Promise<Article[]> {
-  const res = await fetch(
-    `${API_BASE}/articles?skip=${skip}&limit=${limit}`
-  );
+  const params = new URLSearchParams({
+    skip: String(skip),
+    limit: String(limit),
+  });
+  if (feed) params.set("feed", feed);
+  const res = await fetch(`${API_BASE}/articles?${params}`);
   if (!res.ok) throw new Error(`Failed to fetch articles: ${res.status}`);
   return res.json();
 }

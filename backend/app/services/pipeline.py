@@ -19,11 +19,11 @@ last_successful_run: datetime | None = None
 PERSONAS = ["historian", "economist", "philosopher"]
 
 
-def process_new_articles(limit: int = 1):
+def process_new_articles(limit: int = 1, feed: str | None = None):
     global last_successful_run
     db: Session = SessionLocal()
     try:
-        rss_articles = fetch_rss_articles(limit=limit)
+        rss_articles = fetch_rss_articles(limit=limit, feed=feed)
         logger.info("Fetched %d articles from RSS", len(rss_articles))
 
         for item in rss_articles:
@@ -61,6 +61,7 @@ def process_new_articles(limit: int = 1):
                     url=item["url"],
                     title=item["title"],
                     full_text=full_text,
+                    feed=item["feed"],
                 )
                 db.add(article)
                 db.flush()
