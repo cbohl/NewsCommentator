@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import re
 from pathlib import Path
 
 from langchain_openai import ChatOpenAI
@@ -64,6 +65,8 @@ def _get_wikipedia_tool():
     global _wikipedia_tool
     if _wikipedia_tool is None:
         try:
+            import wikipedia as _wiki_mod
+            _wiki_mod.set_user_agent("NewsCommentator/1.0 (educational project; Python/requests)")
             from langchain_community.tools import WikipediaQueryRun
             from langchain_community.utilities import WikipediaAPIWrapper
             _wikipedia_tool = WikipediaQueryRun(
@@ -107,6 +110,22 @@ def _get_pipeline_llm(temperature: float = 0.9, persona: str = "philosopher"):
     return llm, []
 
 
+# Matches inline pseudo-JSON tool calls like {"query":"...","ride":"web_search"}
+_PSEUDO_TOOL_CALL_RE = re.compile(r'\{[^}]*"query"[^}]*\}')
+# Matches search narration like "Searching web for relevant ..."
+_SEARCH_NARRATION_RE = re.compile(r'Searching\s+(?:web|Wikipedia|the web)\s+for\s+[^.]*\.\s*', re.IGNORECASE)
+
+
+def _clean_response(text: str) -> str:
+    """Strip leaked search narration and pseudo-JSON tool calls from LLM output."""
+    cleaned = _PSEUDO_TOOL_CALL_RE.sub('', text)
+    cleaned = _SEARCH_NARRATION_RE.sub('', cleaned)
+    cleaned = cleaned.strip()
+    if cleaned != text.strip():
+        logger.warning("Stripped leaked search narration from response")
+    return cleaned
+
+
 def _invoke_with_tools(messages: list, *, temperature: float = 0.9, persona: str, max_tool_calls: int = 2) -> tuple[str, list[dict]]:
     llm, tools = _get_pipeline_llm(temperature, persona)
     tools_by_name = {t.name: t for t in tools}
@@ -121,7 +140,7 @@ def _invoke_with_tools(messages: list, *, temperature: float = 0.9, persona: str
                 logger.info("Tool-calling loop complete — %d search(es) made", tool_calls_made)
             else:
                 logger.info("No tool calls — LLM responded directly")
-            return response.content, search_queries
+            return _clean_response(response.content), search_queries
 
         messages.append(response)
         for tc in response.tool_calls:

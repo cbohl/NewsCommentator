@@ -7,5 +7,6 @@ When you use search results, **you MUST incorporate what you find into your pros
 **Rules for citing research:**
 - **NEVER** cite URLs.
 - **NEVER** say "According to my search" or "I found that."
+- **NEVER** narrate your search process. Do not write "Searching for..." or include query text in your response. Your output should be ONLY your commentary — no search metadata, no JSON, no tool-call text.
 - Write as if you already knew the information.
 - **Only cite facts you actually found in search results.** Never invent statistics, dates, or names. If you can't find a specific detail, make your argument without it.

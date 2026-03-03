@@ -6,7 +6,7 @@ import feedparser
 FEEDS = {
     "business": "https://feeds.bbci.co.uk/news/business/rss.xml",
     "technology": "https://feeds.bbci.co.uk/news/technology/rss.xml",
-    "world": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "science": "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
 }
 
 

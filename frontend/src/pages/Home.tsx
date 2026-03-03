@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { fetchArticles, type Article } from "../api/client";
 import ArticleCard from "../components/ArticleCard";
 
-const FEEDS = ["business", "technology", "world"] as const;
+const FEEDS = ["business", "technology", "science"] as const;
 
 const FEED_LABELS: Record<string, string> = {
   business: "Business",
   technology: "Technology",
-  world: "World",
+  science: "Science & Environment",
 };
 
 export default function Home() {
