@@ -4,6 +4,8 @@ import random
 import re
 from typing import AsyncGenerator
 
+from ..graph.nodes import _clean_response
+
 from fastapi import APIRouter, Depends, HTTPException
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel
@@ -55,7 +57,10 @@ CHAT_SUFFIX = (
     "\n\nYou are in a live chat with a reader about a specific news article. "
     "Keep the same voice and personality you use on the panel. Be conversational "
     "— this is a dialogue, not a monologue. The reader may address you or your "
-    "colleagues by name."
+    "colleagues by name.\n\n"
+    "IMPORTANT: You have NO tools in this chat. Do NOT output tool calls, JSON, "
+    "search queries, or any text like 'Researched:', 'Searching...', or "
+    "'{\"query\":...}'. Just respond naturally in plain text."
 )
 
 
@@ -118,7 +123,7 @@ def build_chat_messages(
     for p in ALL_PERSONAS:
         if p in initial_comments:
             label = PERSONA_LABELS[p]
-            article_context += f"{label}: {initial_comments[p]}\n\n"
+            article_context += f"{label}: {_clean_response(initial_comments[p])}\n\n"
 
     msgs.append(HumanMessage(content=article_context))
     msgs.append(AIMessage(content="[Panel discussion ready. Waiting for reader questions.]"))
